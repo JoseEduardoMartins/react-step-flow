@@ -121,4 +121,4 @@ restores focus on teardown. The portal renders a labelled `role="dialog"` with
 The bulk of coverage comes from pure core unit tests (no DOM needed). React
 hooks and components are tested with React Testing Library on jsdom, mocking
 `getBoundingClientRect` and polyfilling `ResizeObserver`/`IntersectionObserver`/
-`scrollIntoView`. The suite enforces ≥95% line/function/statement coverage.
+`scrollIntoView`. The suite enforces ≥80% coverage (actual coverage is ~99%).
