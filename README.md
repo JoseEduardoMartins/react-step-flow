@@ -185,6 +185,7 @@ Root provider. Creates a single store and mounts the global portal.
 | `closeOnEsc` | `boolean` | `true` | `Escape` cancels the tour. |
 | `closeOnOverlayClick` | `boolean` | `false` | Clicking the backdrop cancels. |
 | `labels` | `Partial<StepLabels>` | English | Button labels (`next`/`previous`/`finish`/`skip`). |
+| `announce` | `(current, total, step) => string` | `"Step X of N: title"` | Screen-reader announcement template (for localization). |
 | `targetNotFound` | `"skip" \| "center" \| "wait"` | `"center"` | Behavior when a target is missing. |
 | `theme` | `string` | `"light"` | Value of the `data-rsf-theme` attribute. |
 | `portalContainer` | `HTMLElement \| null` | `document.body` | Where the portal renders. |
@@ -342,7 +343,15 @@ tutorial.start("first-access", { stepIndex: 2 }); // start partway through
 - Focus moves into the tooltip on each step and is restored to the trigger when
   the tour ends.
 - The tooltip is a labelled `role="dialog"` with `aria-modal`.
-- A polite `aria-live` region announces "Step X of N: title".
+- A polite `aria-live` region announces "Step X of N: title". Localize it with
+  the `announce` prop:
+
+  ```tsx
+  <TutorialProvider
+    labels={{ next: "Próximo", previous: "Voltar", finish: "Concluir", skip: "Pular" }}
+    announce={(current, total, step) => `Passo ${current} de ${total}: ${step.title}`}
+  >
+  ```
 
 ---
 
