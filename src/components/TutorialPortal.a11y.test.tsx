@@ -51,6 +51,18 @@ describe("TutorialPortal accessibility", () => {
     expect(live).toHaveTextContent("Step 1 of 2: Step A");
   });
 
+  it("uses a custom announce template when provided", () => {
+    const store = createStore();
+    store.register(flow);
+    const { baseElement } = renderApp(store, {
+      announce: (current, total, step) =>
+        `Passo ${current} de ${total}: ${step.title}`,
+    });
+    act(() => store.start("f"));
+    const live = baseElement.querySelector('[aria-live="polite"]');
+    expect(live).toHaveTextContent("Passo 1 de 2: Step A");
+  });
+
   it("moves focus into the tooltip when a step starts", () => {
     const store = createStore();
     store.register(flow);

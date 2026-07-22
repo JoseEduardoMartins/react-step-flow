@@ -117,7 +117,7 @@ export function TutorialPortal() {
   return createPortal(
     <div data-rsf-theme={config.theme} style={wrapperStyle}>
       <div aria-live="polite" role="status" style={srOnly}>
-        {`Step ${stepIndex + 1} of ${total}: ${step.title}`}
+        {config.announce(stepIndex + 1, total, step)}
       </div>
       {paddedRect ? (
         <Spotlight

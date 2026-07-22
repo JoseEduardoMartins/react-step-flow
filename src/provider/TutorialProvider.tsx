@@ -63,6 +63,7 @@ export function TutorialProvider({
       config.portalContainer,
       config.components,
       config.labels,
+      config.announce,
     ]
   );
 
