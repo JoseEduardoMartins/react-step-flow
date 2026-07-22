@@ -41,4 +41,27 @@ describe("resolveConfig", () => {
     expect(c.slots.Tooltip).toBe(Custom);
     expect(c.slots.Overlay).toBe(Overlay);
   });
+
+  it("provides a default English announcement template", () => {
+    const c = resolveConfig();
+    const msg = c.announce(1, 3, {
+      target: "a",
+      title: "Users",
+      description: "",
+    });
+    expect(msg).toBe("Step 1 of 3: Users");
+  });
+
+  it("allows overriding the announcement template for localization", () => {
+    const c = resolveConfig({
+      announce: (current, total, step) =>
+        `Passo ${current} de ${total}: ${step.title}`,
+    });
+    const msg = c.announce(2, 4, {
+      target: "b",
+      title: "Usuários",
+      description: "",
+    });
+    expect(msg).toBe("Passo 2 de 4: Usuários");
+  });
 });

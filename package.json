@@ -1,11 +1,22 @@
 {
   "name": "react-step-flow",
-  "version": "0.1.0",
+  "version": "0.0.0-development",
   "description": "A modern, headless, type-safe React library for guided tours, walkthroughs and onboarding tutorials.",
   "author": "José Eduardo Martins",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JoseEduardoMartins/react-step-flow.git"
+  },
+  "homepage": "https://github.com/JoseEduardoMartins/react-step-flow#readme",
+  "bugs": {
+    "url": "https://github.com/JoseEduardoMartins/react-step-flow/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "react",
     "tour",
@@ -52,7 +63,15 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "prepare": "husky",
+    "release": "semantic-release"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "peerDependencies": {
     "react": ">=19",
@@ -63,6 +82,10 @@
     "use-sync-external-store": "^1.4.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@storybook/addon-a11y": "^8.4.0",
     "@storybook/addon-essentials": "^8.4.0",
     "@storybook/react": "^8.4.0",
@@ -81,10 +104,13 @@
     "eslint-plugin-jsx-a11y": "^6.10.0",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^5.1.0",
+    "husky": "^9.1.7",
     "jsdom": "^25.0.0",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "semantic-release": "^25.0.8",
     "storybook": "^8.4.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
