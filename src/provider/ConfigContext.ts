@@ -3,8 +3,14 @@ import type { StepLabels, Slots, SlotOverrides } from "../components/slots";
 import { Overlay } from "../components/Overlay";
 import { Spotlight } from "../components/Spotlight";
 import { TutorialTooltip } from "../components/TutorialTooltip";
-import type { TargetNotFoundMode } from "../types";
+import type { Step, TargetNotFoundMode } from "../types";
 import type { TooltipAnimation } from "../animations/presets";
+
+/**
+ * Builds the message announced to screen readers on each step, via an
+ * `aria-live` region. `current` is 1-based. Override for localization.
+ */
+export type AnnounceFn = (current: number, total: number, step: Step) => string;
 
 /** Fully-resolved runtime configuration consumed by the portal and slots. */
 export interface ResolvedConfig {
@@ -22,6 +28,8 @@ export interface ResolvedConfig {
   theme: string;
   portalContainer: HTMLElement | null;
   slots: Slots;
+  /** Builds the screen-reader announcement for the current step. */
+  announce: AnnounceFn;
   /** Duration (ms) of the spotlight cut-out glide between steps. */
   spotlightTransition: number;
   /** Tooltip entrance animation. */
@@ -46,6 +54,7 @@ export interface TutorialConfig {
   theme?: string;
   portalContainer?: HTMLElement | null;
   components?: SlotOverrides;
+  announce?: AnnounceFn;
   spotlightTransition?: number;
   tooltipAnimation?: TooltipAnimation;
   animationDuration?: number;
@@ -59,6 +68,9 @@ const DEFAULT_LABELS: StepLabels = {
   finish: "Done",
   skip: "Skip",
 };
+
+const DEFAULT_ANNOUNCE: AnnounceFn = (current, total, step) =>
+  `Step ${current} of ${total}: ${step.title}`;
 
 const DEFAULT_SLOTS: Slots = {
   Overlay,
@@ -84,6 +96,7 @@ export function resolveConfig(config: TutorialConfig = {}): ResolvedConfig {
     theme: config.theme ?? "light",
     portalContainer: config.portalContainer ?? null,
     slots: { ...DEFAULT_SLOTS, ...config.components },
+    announce: config.announce ?? DEFAULT_ANNOUNCE,
     spotlightTransition: animationsOff ? 0 : (config.spotlightTransition ?? 300),
     tooltipAnimation: animationsOff ? "none" : (config.tooltipAnimation ?? "fade"),
     animationDuration: animationsOff ? 0 : (config.animationDuration ?? 200),

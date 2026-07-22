@@ -11,7 +11,11 @@ export {
   ConfigContext,
   resolveConfig,
 } from "./provider/ConfigContext";
-export type { TutorialConfig, ResolvedConfig } from "./provider/ConfigContext";
+export type {
+  TutorialConfig,
+  ResolvedConfig,
+  AnnounceFn,
+} from "./provider/ConfigContext";
 
 // Hooks
 export { useTutorial } from "./hooks/useTutorial";
