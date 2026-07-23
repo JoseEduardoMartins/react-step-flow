@@ -80,6 +80,21 @@ describe("ElementRegistry", () => {
     expect(listener).toHaveBeenNthCalledWith(2, "save");
   });
 
+  it("clear() drops all elements and subscribers", () => {
+    const registry = new ElementRegistry();
+    const listener = vi.fn();
+    const node = el();
+    registry.register("a", node);
+    registry.register("b", el());
+    registry.subscribe(listener);
+    registry.clear();
+    expect(registry.size).toBe(0);
+    expect(registry.get("a")).toBeNull();
+    expect(registry.idFor(node)).toBeUndefined();
+    registry.register("c", el());
+    expect(listener).not.toHaveBeenCalled();
+  });
+
   it("stops notifying after unsubscribe", () => {
     const registry = new ElementRegistry();
     const listener = vi.fn();
