@@ -20,13 +20,19 @@ export interface UseFocusTrapOptions {
   restoreFocus?: boolean;
   /** Changing this re-moves focus to the first focusable (e.g. on step change). */
   focusKey?: string | number;
+  /**
+   * Whether Tab/Shift+Tab are confined to the container. Default true. Set false
+   * for interactive steps so keyboard focus can reach the highlighted element
+   * outside the tooltip; Escape and initial focus still apply.
+   */
+  containFocus?: boolean;
 }
 
 function focusableWithin(container: HTMLElement | null): HTMLElement[] {
   if (!container) return [];
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-  ).filter((el) => !el.hidden && el.getAttribute("aria-hidden") !== "true");
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (el) => !el.hidden && el.getAttribute("aria-hidden") !== "true"
+  );
 }
 
 /**
@@ -36,7 +42,13 @@ function focusableWithin(container: HTMLElement | null): HTMLElement[] {
  */
 export function useFocusTrap(
   containerRef: RefObject<HTMLElement | null>,
-  { active, onEscape, restoreFocus = true, focusKey }: UseFocusTrapOptions
+  {
+    active,
+    onEscape,
+    restoreFocus = true,
+    focusKey,
+    containFocus = true,
+  }: UseFocusTrapOptions
 ): void {
   // Set up the key handler and focus restoration for the lifetime of the trap.
   useEffect(() => {
@@ -48,7 +60,7 @@ export function useFocusTrap(
         onEscape?.();
         return;
       }
-      if (event.key !== "Tab") return;
+      if (!containFocus || event.key !== "Tab") return;
       const items = focusableWithin(containerRef.current);
       if (items.length === 0) {
         event.preventDefault();
@@ -73,7 +85,7 @@ export function useFocusTrap(
         previouslyFocused.focus();
       }
     };
-  }, [active, onEscape, restoreFocus, containerRef]);
+  }, [active, onEscape, restoreFocus, containerRef, containFocus]);
 
   // Move focus into the container on activation and whenever focusKey changes.
   useEffect(() => {

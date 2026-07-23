@@ -23,6 +23,20 @@ function Trap({
   );
 }
 
+function TrapWithOutside({ containFocus }: { containFocus?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, { active: true, containFocus });
+  return (
+    <div>
+      <div ref={ref}>
+        <button>first</button>
+        <button>second</button>
+      </div>
+      <button>outside</button>
+    </div>
+  );
+}
+
 describe("useFocusTrap", () => {
   it("moves focus to the first focusable when activated", () => {
     render(<Trap active />);
@@ -79,6 +93,28 @@ describe("useFocusTrap", () => {
     const [, second] = document.querySelectorAll("button");
     second!.focus();
     rerender(<Trap active focusKey={1} />);
+    expect(document.activeElement?.textContent).toBe("first");
+  });
+
+  it("lets focus leave the container when containFocus is false", async () => {
+    const user = userEvent.setup();
+    render(<TrapWithOutside containFocus={false} />);
+    const second = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent === "second"
+    )!;
+    second.focus();
+    await user.tab();
+    expect(document.activeElement?.textContent).toBe("outside");
+  });
+
+  it("still contains focus by default (containFocus omitted)", async () => {
+    const user = userEvent.setup();
+    render(<TrapWithOutside />);
+    const second = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent === "second"
+    )!;
+    second.focus();
+    await user.tab();
     expect(document.activeElement?.textContent).toBe("first");
   });
 });
