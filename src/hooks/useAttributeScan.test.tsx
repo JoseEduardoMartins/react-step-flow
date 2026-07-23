@@ -61,4 +61,47 @@ describe("useAttributeScan", () => {
       expect(store.registry.get("scan-d")).toBeNull();
     });
   });
+
+  it("scans a custom root subtree instead of document.body", () => {
+    const host = document.createElement("div");
+    const inner = document.createElement("button");
+    inner.setAttribute("data-tutorial-id", "scan-root-x");
+    host.appendChild(inner);
+    document.body.appendChild(host);
+
+    const store = createStore();
+    render(
+      <TutorialProvider store={store} scanAttributes scanRoot={host}>
+        <div />
+      </TutorialProvider>
+    );
+    expect(store.registry.get("scan-root-x")).toBe(inner);
+    host.remove();
+  });
+
+  it("scans into a shadow root", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: "open" });
+    const inner = document.createElement("button");
+    inner.setAttribute("data-tutorial-id", "scan-shadow-y");
+    shadow.appendChild(inner);
+
+    const store = createStore();
+    render(
+      <TutorialProvider store={store} scanAttributes scanRoot={shadow}>
+        <div />
+      </TutorialProvider>
+    );
+    expect(store.registry.get("scan-shadow-y")).toBe(inner);
+
+    // Observer also picks up nodes added to the shadow root later.
+    const late = document.createElement("button");
+    late.setAttribute("data-tutorial-id", "scan-shadow-z");
+    shadow.appendChild(late);
+    await waitFor(() => {
+      expect(store.registry.get("scan-shadow-z")).toBe(late);
+    });
+    host.remove();
+  });
 });

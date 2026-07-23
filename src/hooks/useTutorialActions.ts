@@ -4,7 +4,7 @@ import type { RegisterOptions, StartOptions, Step, Tutorial } from "../types";
 
 /** Return shape of {@link useTutorialActions}. */
 export interface UseTutorialActionsResult {
-  register: (flow: Tutorial, options?: RegisterOptions) => void;
+  register: <M = unknown>(flow: Tutorial<M>, options?: RegisterOptions<M>) => void;
   unregister: (flowId: string) => void;
   start: (flowId: string, options?: StartOptions) => void;
   next: () => void;

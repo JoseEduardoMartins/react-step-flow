@@ -75,6 +75,66 @@ describe("TutorialStore — registration", () => {
     register(store);
     expect(store.state.flows).not.toBe(before);
   });
+
+  it("carries typed step metadata through to flow callbacks", () => {
+    const store = makeStore();
+    const seen: Array<string | undefined> = [];
+    store.register<{ route: string }>(
+      {
+        id: "m",
+        steps: [
+          { target: "", title: "t1", description: "", metadata: { route: "/a" } },
+          { target: "", title: "t2", description: "", metadata: { route: "/b" } },
+        ],
+      },
+      { onStepChange: ({ step }) => seen.push(step.metadata?.route) }
+    );
+    store.start("m");
+    store.next();
+    expect(seen).toEqual(["/a", "/b"]);
+  });
+
+  it("warns when overwriting a flow with an already-registered id", () => {
+    const store = makeStore();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    register(store);
+    register(store);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("overwrote an already-registered flow")
+    );
+    warnSpy.mockRestore();
+  });
+});
+
+describe("TutorialStore — destroy", () => {
+  it("releases flows, registry and state subscribers", () => {
+    const store = makeStore();
+    register(store);
+    store.start("onboarding");
+    const stateListener = vi.fn();
+    store.subscribe(stateListener);
+    store.registry.register("menu", document.createElement("div"));
+
+    store.destroy();
+
+    expect(store.state.status).toBe("idle");
+    expect(store.state.flows.size).toBe(0);
+    expect(store.registry.size).toBe(0);
+
+    // No further notifications reach a subscriber after teardown.
+    store.register(flow);
+    expect(stateListener).not.toHaveBeenCalled();
+  });
+
+  it("stops delivering emitter events after destroy", () => {
+    const store = makeStore();
+    const listener = vi.fn();
+    store.emitter.on("start", listener);
+    store.destroy();
+    register(store);
+    store.start("onboarding");
+    expect(listener).not.toHaveBeenCalled();
+  });
 });
 
 describe("TutorialStore — start", () => {

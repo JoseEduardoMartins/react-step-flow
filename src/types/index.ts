@@ -8,8 +8,14 @@
 /** Where the tooltip is placed relative to the target element. */
 export type Placement = "top" | "bottom" | "left" | "right" | "center";
 
-/** A single step within a tutorial flow. */
-export interface Step {
+/**
+ * A single step within a tutorial flow.
+ *
+ * `M` types the optional {@link Step.metadata} payload. It defaults to
+ * `unknown`, so plain `Step` is unchanged; supply it (e.g. `Step<{ route: string }>`)
+ * for end-to-end typing of your own per-step data.
+ */
+export interface Step<M = unknown> {
   /** Optional stable id, usable with {@link goTo}. Falls back to the array index. */
   id?: string;
   /**
@@ -32,52 +38,47 @@ export interface Step {
   /** Whether the highlighted element remains interactive. Defaults to `false`. */
   interactable?: boolean;
   /** Arbitrary user data carried on the step. */
-  metadata?: unknown;
+  metadata?: M;
 }
 
-/** A named tutorial flow: an ordered list of steps. */
-export interface Tutorial {
+/** A named tutorial flow: an ordered list of steps. `M` types each step's metadata. */
+export interface Tutorial<M = unknown> {
   id: string;
-  steps: Step[];
+  steps: Step<M>[];
 }
 
 /** Lifecycle status of the tutorial engine. */
-export type TutorialStatus =
-  | "idle"
-  | "running"
-  | "paused"
-  | "completed"
-  | "cancelled";
+export type TutorialStatus = "idle" | "running" | "paused" | "completed" | "cancelled";
 
 /** Context passed to flow-level lifecycle callbacks and global events. */
-export interface EventCtx {
+export interface EventCtx<M = unknown> {
   flowId: string;
-  flow: Tutorial;
+  flow: Tutorial<M>;
 }
 
 /** Context passed on step changes. */
-export interface StepChangeCtx extends EventCtx {
-  step: Step;
+export interface StepChangeCtx<M = unknown> extends EventCtx<M> {
+  step: Step<M>;
   stepIndex: number;
   previousStepIndex: number;
 }
 
 /** Payload emitted when a step's target element cannot be found. */
-export interface TargetNotFoundCtx extends EventCtx {
-  step: Step;
+export interface TargetNotFoundCtx<M = unknown> extends EventCtx<M> {
+  step: Step<M>;
   stepIndex: number;
 }
 
 /** Per-flow lifecycle callbacks, supplied at registration time. */
-export interface FlowCallbacks {
-  onStart?: (ctx: EventCtx) => void;
-  onFinish?: (ctx: EventCtx) => void;
-  onStepChange?: (ctx: StepChangeCtx) => void;
-  onCancel?: (ctx: EventCtx) => void;
+export interface FlowCallbacks<M = unknown> {
+  onStart?: (ctx: EventCtx<M>) => void;
+  onFinish?: (ctx: EventCtx<M>) => void;
+  onStepChange?: (ctx: StepChangeCtx<M>) => void;
+  onCancel?: (ctx: EventCtx<M>) => void;
 }
 
 /** Options accepted by {@link register}. */
-export interface RegisterOptions extends FlowCallbacks {
+export interface RegisterOptions<M = unknown> extends FlowCallbacks<M> {
   /** Persist completion so a completed flow is not shown again. */
   persist?: boolean;
   /** Override the persistence key (defaults to the flow id). */
@@ -127,11 +128,7 @@ export type TargetNotFoundMode = "skip" | "center" | "wait";
 
 /** Names of emitted lifecycle events. */
 export type TutorialEventName =
-  | "start"
-  | "finish"
-  | "cancel"
-  | "stepChange"
-  | "targetNotFound";
+  "start" | "finish" | "cancel" | "stepChange" | "targetNotFound";
 
 /** Maps each event name to its payload type. */
 export interface EventMap {

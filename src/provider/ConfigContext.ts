@@ -36,6 +36,8 @@ export interface ResolvedConfig {
   tooltipAnimation: TooltipAnimation;
   /** Tooltip entrance animation duration (ms). */
   animationDuration: number;
+  /** Make the rest of the page inert while a non-interactive step is active. */
+  inertBackground: boolean;
 }
 
 /** User-facing configuration accepted by the provider (all optional). */
@@ -60,6 +62,11 @@ export interface TutorialConfig {
   animationDuration?: number;
   /** Disable all animations (spotlight glide + tooltip entrance). */
   disableAnimations?: boolean;
+  /**
+   * When true, non-interactive steps mark the rest of the portal container's
+   * children as `inert`/`aria-hidden` for strict modal semantics. Default false.
+   */
+  inertBackground?: boolean;
 }
 
 const DEFAULT_LABELS: StepLabels = {
@@ -100,6 +107,7 @@ export function resolveConfig(config: TutorialConfig = {}): ResolvedConfig {
     spotlightTransition: animationsOff ? 0 : (config.spotlightTransition ?? 300),
     tooltipAnimation: animationsOff ? "none" : (config.tooltipAnimation ?? "fade"),
     animationDuration: animationsOff ? 0 : (config.animationDuration ?? 200),
+    inertBackground: config.inertBackground ?? false,
   };
 }
 

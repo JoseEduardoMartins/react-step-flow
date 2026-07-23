@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { CSSProperties, Ref } from "react";
 import type { TooltipProps } from "./slots";
 import { getTooltipAnimationStyle } from "../animations/presets";
@@ -11,8 +11,7 @@ const cardStyle: CSSProperties = {
   background: "var(--rsf-tooltip-bg, #ffffff)",
   color: "var(--rsf-tooltip-fg, #1a1a1a)",
   boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-  fontFamily:
-    "var(--rsf-font, system-ui, -apple-system, Segoe UI, Roboto, sans-serif)",
+  fontFamily: "var(--rsf-font, system-ui, -apple-system, Segoe UI, Roboto, sans-serif)",
   fontSize: 14,
   lineHeight: 1.5,
 };
@@ -83,6 +82,11 @@ export function TutorialTooltip({
   floating,
 }: TooltipProps) {
   const canSkip = step.canSkip ?? true;
+  // Unique per instance so two tooltips (e.g. multiple providers / micro-frontends)
+  // never collide on the same DOM ids that back aria-labelledby/-describedby.
+  const baseId = useId();
+  const titleId = `${baseId}-title`;
+  const descId = `${baseId}-desc`;
   const [entered, setEntered] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
@@ -98,14 +102,14 @@ export function TutorialTooltip({
       data-placement={floating.placement}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="rsf-tooltip-title"
-      aria-describedby="rsf-tooltip-desc"
+      aria-labelledby={titleId}
+      aria-describedby={descId}
       style={{ ...floating.floatingStyles, zIndex, ...cardStyle, ...animationStyle }}
     >
-      <h2 id="rsf-tooltip-title" style={titleStyle}>
+      <h2 id={titleId} style={titleStyle}>
         {step.title}
       </h2>
-      <p id="rsf-tooltip-desc" style={descStyle}>
+      <p id={descId} style={descStyle}>
         {step.description}
       </p>
 

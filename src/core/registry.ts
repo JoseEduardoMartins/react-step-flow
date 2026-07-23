@@ -12,7 +12,7 @@
  */
 export class ElementRegistry {
   private readonly byId = new Map<string, HTMLElement>();
-  private readonly idOf = new WeakMap<HTMLElement, string>();
+  private idOf = new WeakMap<HTMLElement, string>();
   private readonly listeners = new Set<(id: string) => void>();
 
   /** Register (or replace) the element for an id. */
@@ -55,6 +55,18 @@ export class ElementRegistry {
   /** Number of registered elements. */
   get size(): number {
     return this.byId.size;
+  }
+
+  /**
+   * Drop all registered elements and subscribers. Used by {@link TutorialStore.destroy}
+   * when tearing a store down (e.g. a micro-frontend unmounting). The reverse
+   * index is swapped for a fresh `WeakMap` so lookups clear immediately rather
+   * than waiting for the detached nodes to be collected.
+   */
+  clear(): void {
+    this.byId.clear();
+    this.idOf = new WeakMap();
+    this.listeners.clear();
   }
 
   /**

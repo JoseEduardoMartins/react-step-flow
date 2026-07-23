@@ -12,10 +12,7 @@ import { warn } from "../utils/warn";
 import { EventEmitter } from "./emitter";
 import { validateFlow } from "./guards";
 import { clampIndex, isLastStep, resolveStepIndex, stepAt } from "./navigation";
-import {
-  createMemoryAdapter,
-  type PersistenceAdapter,
-} from "./persistence";
+import { createMemoryAdapter, type PersistenceAdapter } from "./persistence";
 import { ElementRegistry } from "./registry";
 
 /** Configuration accepted when constructing a {@link TutorialStore}. */
@@ -87,9 +84,15 @@ export class TutorialStore {
   // Registration
   // ---------------------------------------------------------------------------
 
-  register = (flow: Tutorial, options: RegisterOptions = {}): void => {
+  register = <M = unknown>(flow: Tutorial<M>, options: RegisterOptions<M> = {}): void => {
     if (!validateFlow(flow)) return;
-    this.flows.set(flow.id, { tutorial: flow, options });
+    if (this.flows.has(flow.id)) {
+      warn(
+        `register("${flow.id}") overwrote an already-registered flow with the same id.`
+      );
+    }
+    // Metadata typing is erased at storage; it was checked at the call site.
+    this.flows.set(flow.id, { tutorial: flow, options } as RegisteredFlow);
     this.setState({ flows: this.snapshotFlows() });
   };
 
@@ -112,11 +115,7 @@ export class TutorialStore {
       warn(`start("${flowId}") ignored: no flow registered with that id.`);
       return;
     }
-    if (
-      !options.force &&
-      record.options.persist &&
-      this.hasCompleted(flowId)
-    ) {
+    if (!options.force && record.options.persist && this.hasCompleted(flowId)) {
       return;
     }
 
@@ -225,11 +224,7 @@ export class TutorialStore {
   };
 
   /** Shallow-merge a patch into a step identified by index or id. */
-  updateStep = (
-    flowId: string,
-    ref: number | string,
-    patch: Partial<Step>
-  ): void => {
+  updateStep = (flowId: string, ref: number | string, patch: Partial<Step>): void => {
     this.mutateSteps(flowId, (steps, flow) => {
       const idx = resolveStepIndex(flow, ref);
       if (idx < 0) return steps;
@@ -258,6 +253,25 @@ export class TutorialStore {
       step,
       stepIndex: this.state.stepIndex,
     });
+  };
+
+  // ---------------------------------------------------------------------------
+  // Teardown
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Release everything this store holds: state subscribers, registered flows,
+   * event listeners and the element registry. Intended for explicit teardown of
+   * a store that outlives a single React tree — e.g. a shared store when a
+   * micro-frontend unmounts. Do NOT call this for a store owned by a still-
+   * mounted `<TutorialProvider>`. Persistence data is left untouched.
+   */
+  destroy = (): void => {
+    this.listeners.clear();
+    this.flows.clear();
+    this.emitter.clear();
+    this.registry.clear();
+    this._state = { ...IDLE_STATE, flows: this.snapshotFlows() };
   };
 
   // ---------------------------------------------------------------------------
