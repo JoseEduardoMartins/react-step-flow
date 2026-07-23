@@ -28,4 +28,39 @@ describe("validateFlow", () => {
     expect(validateFlow(undefined as unknown as Tutorial)).toBe(false);
     warnSpy.mockRestore();
   });
+
+  it("rejects a flow with a malformed step", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const flow = {
+      id: "f",
+      steps: [{ target: 123, title: "x", description: "" }],
+    } as unknown as Tutorial;
+    expect(validateFlow(flow)).toBe(false);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("malformed"));
+    warnSpy.mockRestore();
+  });
+
+  it("accepts a centered step with an empty target", () => {
+    const flow: Tutorial = {
+      id: "f",
+      steps: [{ target: "", title: "Welcome", description: "" }],
+    };
+    expect(validateFlow(flow)).toBe(true);
+  });
+
+  it("warns but accepts a flow with duplicate step ids", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const flow: Tutorial = {
+      id: "f",
+      steps: [
+        { id: "dup", target: "a", title: "A", description: "" },
+        { id: "dup", target: "b", title: "B", description: "" },
+      ],
+    };
+    expect(validateFlow(flow)).toBe(true);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('duplicate step id "dup"')
+    );
+    warnSpy.mockRestore();
+  });
 });
