@@ -32,6 +32,7 @@ framework-agnostic core, and first-class TypeScript ergonomics.
 - [Events & callbacks](#events--callbacks)
 - [Persistence](#persistence)
 - [Dynamic flows](#dynamic-flows)
+- [Multi-page tours (routing)](#multi-page-tours-routing)
 - [Accessibility](#accessibility)
 - [Architecture](#architecture)
 - [FAQ](#faq)
@@ -176,6 +177,7 @@ Root provider. Creates a single store and mounts the global portal.
 | `persistence` | `boolean \| PersistenceAdapter` | in-memory | `true` uses `localStorage`. |
 | `namespace` | `string` | `"rsf"` | Prefix for persistence keys. |
 | `scanAttributes` | `boolean` | `false` | Auto-register `[data-tutorial-id]` elements. |
+| `scanRoot` | `HTMLElement \| ShadowRoot \| Document` | `document.body` | Root that `scanAttributes` scans (e.g. a shadow root in a micro-frontend). |
 | `zIndex` | `number` | `10000` | Base z-index for overlay/spotlight. |
 | `offset` | `number` | `12` | Gap (px) between target and tooltip. |
 | `spotlightPadding` | `number` | `8` | Padding around the highlighted element. |
@@ -184,6 +186,7 @@ Root provider. Creates a single store and mounts the global portal.
 | `scrollBehavior` | `ScrollBehavior` | `"smooth"` | How targets scroll into view. |
 | `closeOnEsc` | `boolean` | `true` | `Escape` cancels the tour. |
 | `closeOnOverlayClick` | `boolean` | `false` | Clicking the backdrop cancels. |
+| `inertBackground` | `boolean` | `false` | Mark the rest of the page `inert`/`aria-hidden` during non-interactive steps (strict modal semantics). |
 | `labels` | `Partial<StepLabels>` | English | Button labels (`next`/`previous`/`finish`/`skip`). |
 | `announce` | `(current, total, step) => string` | `"Step X of N: title"` | Screen-reader announcement template (for localization). |
 | `targetNotFound` | `"skip" \| "center" \| "wait"` | `"center"` | Behavior when a target is missing. |
@@ -243,6 +246,7 @@ tutorial.hasCompleted(flowId);
 tutorial.resetPersistence(flowId);
 tutorial.state;            // immutable snapshot
 tutorial.emitter.on(event, cb);
+tutorial.destroy();        // release a shared store when its owner unmounts
 ```
 
 The core ships React-free from `react-step-flow/core` for non-React usage.
@@ -336,13 +340,87 @@ tutorial.start("first-access", { stepIndex: 2 }); // start partway through
 
 ---
 
+## Multi-page tours (routing)
+
+A single flow can span several pages/routes. There is no router coupling baked
+into the library — you wire it up with two small pieces plus one provider prop:
+
+1. **Tell each step which route it lives on.** The `metadata` field is free-form
+   and fully typed — parameterize `Tutorial<M>` / `Step<M>` with your shape so
+   `step.metadata` is typed everywhere (no casts):
+
+   ```ts
+   interface StepMeta { route: string }
+
+   const flow: Tutorial<StepMeta> = {
+     id: "onboarding",
+     steps: [
+       { target: "menu-users",   title: "Users",   description: "…", metadata: { route: "/users" } },
+       { target: "invoice-card", title: "Invoices", description: "…", metadata: { route: "/billing" } },
+     ],
+   };
+   ```
+
+2. **Navigate on step change.** Register the flow with an `onStepChange` callback
+   that pushes the router whenever the active step's route differs from the
+   current location:
+
+   ```tsx
+   import { useNavigate, useLocation } from "react-router-dom";
+
+   function useRouterTour() {
+     const { register, unregister } = useTutorialActions();
+     const navigate = useNavigate();
+     const location = useLocation();
+
+     // Read latest navigate/path through refs so the callback never goes stale
+     // while its identity stays stable (no re-registration).
+     const navigateRef = useRef(navigate);
+     const pathRef = useRef(location.pathname);
+     navigateRef.current = navigate;
+     pathRef.current = location.pathname;
+
+     useEffect(() => {
+       register(flow, {
+         onStepChange({ step }) {
+           const route = step.metadata?.route; // typed as StepMeta
+           if (route && route !== pathRef.current) navigateRef.current(route);
+         },
+       });
+       return () => unregister(flow.id);
+     }, [register, unregister]);
+   }
+   ```
+
+3. **Wait for the destination page to mount.** Run the provider with
+   `targetNotFound="wait"`. While the new page mounts (and the step's target
+   does not exist yet) the portal simply pauses, then resumes on that step the
+   moment its `TutorialTarget` registers — no timers or manual retries:
+
+   ```tsx
+   <TutorialProvider targetNotFound="wait">
+   ```
+
+The same recipe works with any router (Next.js, TanStack Router, etc.) — only
+the `navigate`/`location` hooks change. A complete, runnable example lives in
+[`examples/multi-page-router`](./examples/multi-page-router) (`npm run
+example:router`), and the Storybook story **Tutorial → Multi-page (React
+Router)** demonstrates it inline.
+
+---
+
 ## Accessibility
 
-- Focus is trapped within the tooltip; `Tab`/`Shift+Tab` wrap.
+- Focus is trapped within the tooltip; `Tab`/`Shift+Tab` wrap. On
+  `interactable` steps the trap is relaxed so keyboard focus can reach the
+  highlighted element (Escape and initial focus still apply).
 - `Escape` cancels (respecting `closeOnEsc` and the step's `canSkip`).
 - Focus moves into the tooltip on each step and is restored to the trigger when
   the tour ends.
-- The tooltip is a labelled `role="dialog"` with `aria-modal`.
+- The tooltip is a labelled `role="dialog"` with `aria-modal`, and its ids are
+  unique per instance (safe with multiple providers / micro-frontends). Enable
+  `inertBackground` to also mark the rest of the page `inert` during
+  non-interactive steps for full modal semantics.
 - A polite `aria-live` region announces "Step X of N: title". Localize it with
   the `announce` prop:
 
