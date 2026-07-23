@@ -41,6 +41,40 @@ describe("TutorialPortal accessibility", () => {
     expect(dialog).toHaveAttribute("aria-describedby");
   });
 
+  it("gives each tooltip instance unique aria ids (no collision across providers)", () => {
+    const a = createStore();
+    const b = createStore();
+    a.register(flow);
+    b.register(flow);
+    render(
+      <>
+        <TutorialProvider store={a}>
+          <TutorialTarget id="a">
+            <button>A</button>
+          </TutorialTarget>
+        </TutorialProvider>
+        <TutorialProvider store={b}>
+          <TutorialTarget id="a">
+            <button>A2</button>
+          </TutorialTarget>
+        </TutorialProvider>
+      </>
+    );
+    act(() => {
+      a.start("f");
+      b.start("f");
+    });
+    const [d1, d2] = screen.getAllByRole("dialog");
+    const label1 = d1!.getAttribute("aria-labelledby");
+    const label2 = d2!.getAttribute("aria-labelledby");
+    expect(label1).toBeTruthy();
+    expect(label2).toBeTruthy();
+    expect(label1).not.toBe(label2);
+    // Each label points at an element that actually exists.
+    expect(document.getElementById(label1!)).not.toBeNull();
+    expect(document.getElementById(label2!)).not.toBeNull();
+  });
+
   it("announces the current step via an aria-live region", () => {
     const store = createStore();
     store.register(flow);
@@ -55,8 +89,7 @@ describe("TutorialPortal accessibility", () => {
     const store = createStore();
     store.register(flow);
     const { baseElement } = renderApp(store, {
-      announce: (current, total, step) =>
-        `Passo ${current} de ${total}: ${step.title}`,
+      announce: (current, total, step) => `Passo ${current} de ${total}: ${step.title}`,
     });
     act(() => store.start("f"));
     const live = baseElement.querySelector('[aria-live="polite"]');
@@ -103,5 +136,43 @@ describe("TutorialPortal accessibility", () => {
     act(() => store.start("g"));
     await user.keyboard("{Escape}");
     expect(store.state.status).toBe("running");
+  });
+
+  it("leaves the background reachable by default (no inert)", () => {
+    const store = createStore();
+    store.register(flow);
+    const { container } = renderApp(store);
+    act(() => store.start("f"));
+    expect(container.hasAttribute("inert")).toBe(false);
+  });
+
+  it("inerts sibling content for a non-interactive step when inertBackground is on", () => {
+    const store = createStore();
+    store.register(flow);
+    const { container } = renderApp(store, { inertBackground: true });
+    act(() => store.start("f"));
+    expect(container.hasAttribute("inert")).toBe(true);
+    expect(container.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("does not inert the background for an interactive step", () => {
+    const store = createStore();
+    store.register({
+      id: "i",
+      steps: [{ target: "a", title: "A", description: "d", interactable: true }],
+    });
+    const { container } = renderApp(store, { inertBackground: true });
+    act(() => store.start("i"));
+    expect(container.hasAttribute("inert")).toBe(false);
+  });
+
+  it("restores background reachability when the tour ends", () => {
+    const store = createStore();
+    store.register(flow);
+    const { container } = renderApp(store, { inertBackground: true });
+    act(() => store.start("f"));
+    expect(container.hasAttribute("inert")).toBe(true);
+    act(() => store.cancel());
+    expect(container.hasAttribute("inert")).toBe(false);
   });
 });

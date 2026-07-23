@@ -4,7 +4,7 @@ import { createStore } from "../core/createStore";
 import type { TutorialStore } from "../core/store";
 import type { PersistenceAdapter } from "../core/persistence";
 import { TutorialPortal } from "../components/TutorialPortal";
-import { useAttributeScan } from "../hooks/useAttributeScan";
+import { useAttributeScan, type ScanRoot } from "../hooks/useAttributeScan";
 import { StoreContext } from "./StoreContext";
 import { ConfigContext, resolveConfig, type TutorialConfig } from "./ConfigContext";
 
@@ -22,6 +22,11 @@ export interface TutorialProviderProps extends TutorialConfig {
    * those elements automatically (via a MutationObserver).
    */
   scanAttributes?: boolean;
+  /**
+   * Root for `scanAttributes` — an element or shadow root to scan instead of
+   * `document.body`. Useful for micro-frontends mounted in a shadow DOM.
+   */
+  scanRoot?: ScanRoot;
 }
 
 /**
@@ -35,13 +40,14 @@ export function TutorialProvider({
   persistence,
   namespace,
   scanAttributes = false,
+  scanRoot,
   ...config
 }: TutorialProviderProps) {
   const ref = useRef<TutorialStore | null>(null);
   if (!ref.current) {
     ref.current = store ?? createStore({ persistence, namespace });
   }
-  useAttributeScan(ref.current, scanAttributes);
+  useAttributeScan(ref.current, scanAttributes, scanRoot);
 
   // Resolve config once per meaningful change. Component slot identities and
   // primitives are stable across renders in the common case.
@@ -64,6 +70,7 @@ export function TutorialProvider({
       config.components,
       config.labels,
       config.announce,
+      config.inertBackground,
     ]
   );
 

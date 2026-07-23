@@ -7,10 +7,7 @@
 export { TutorialProvider } from "./provider/TutorialProvider";
 export type { TutorialProviderProps } from "./provider/TutorialProvider";
 export { StoreContext } from "./provider/StoreContext";
-export {
-  ConfigContext,
-  resolveConfig,
-} from "./provider/ConfigContext";
+export { ConfigContext, resolveConfig } from "./provider/ConfigContext";
 export type {
   TutorialConfig,
   ResolvedConfig,
@@ -35,7 +32,9 @@ export { useScrollIntoView } from "./hooks/useScrollIntoView";
 export type { UseScrollIntoViewOptions } from "./hooks/useScrollIntoView";
 export { useFocusTrap } from "./hooks/useFocusTrap";
 export type { UseFocusTrapOptions } from "./hooks/useFocusTrap";
+export { useInertBackground } from "./hooks/useInertBackground";
 export { useAttributeScan } from "./hooks/useAttributeScan";
+export type { ScanRoot } from "./hooks/useAttributeScan";
 
 // Animations
 export { spotlightTransitionStyle } from "./animations/spotlightTransition";
@@ -65,10 +64,7 @@ export { createStore } from "./core/createStore";
 export type { CreateStoreOptions } from "./core/createStore";
 export { EventEmitter } from "./core/emitter";
 export { ElementRegistry } from "./core/registry";
-export {
-  createMemoryAdapter,
-  createLocalStorageAdapter,
-} from "./core/persistence";
+export { createMemoryAdapter, createLocalStorageAdapter } from "./core/persistence";
 export type { PersistenceAdapter } from "./core/persistence";
 
 // Utils
