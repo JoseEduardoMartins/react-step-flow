@@ -8,8 +8,12 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import { TutorialTarget, useTutorial, useTutorialActions } from "react-step-flow";
-import type { Tutorial } from "react-step-flow";
+import {
+  TutorialTarget,
+  useTutorial,
+  useTutorialActions,
+} from "@jose-eduardo-martins/react-step-flow";
+import type { Tutorial } from "@jose-eduardo-martins/react-step-flow";
 
 /**
  * Multi-page guided tour on top of React Router. The only coupling between the
