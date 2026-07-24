@@ -42,7 +42,7 @@ framework-agnostic core, and first-class TypeScript ergonomics.
 ## Installation
 
 ```bash
-npm install react-step-flow
+npm install @jose-eduardo-martins/react-step-flow
 ```
 
 Peer dependencies: **React 19+** and **react-dom 19+**.
@@ -60,7 +60,7 @@ import {
   TutorialProvider,
   TutorialTarget,
   useTutorial,
-} from "react-step-flow";
+} from "@jose-eduardo-martins/react-step-flow";
 
 const onboarding = {
   id: "first-access",
@@ -97,7 +97,7 @@ export default function App() {
 Register the flow once (e.g. on mount) with the action hook:
 
 ```tsx
-import { useTutorialActions } from "react-step-flow";
+import { useTutorialActions } from "@jose-eduardo-martins/react-step-flow";
 import { useEffect } from "react";
 
 function RegisterFlows() {
@@ -226,7 +226,8 @@ Lower-level DOM hooks are also exported: `useFloatingStep`, `useElementRect`,
 ### Imperative store API
 
 Obtain the store from `useTutorialStore()` or `createStore()` (from
-`react-step-flow` or `react-step-flow/core`). All methods have stable identity.
+`@jose-eduardo-martins/react-step-flow` or `@jose-eduardo-martins/react-step-flow/core`). All
+methods have stable identity.
 
 ```ts
 tutorial.register(flow, options?);
@@ -249,7 +250,7 @@ tutorial.emitter.on(event, cb);
 tutorial.destroy();        // release a shared store when its owner unmounts
 ```
 
-The core ships React-free from `react-step-flow/core` for non-React usage.
+The core ships React-free from `@jose-eduardo-martins/react-step-flow/core` for non-React usage.
 
 ---
 
@@ -457,7 +458,7 @@ Yes. The package ships a `"use client"` directive on its entry; import it from a
 client component or let the directive mark the boundary.
 
 **Can I use it without React?**
-Yes — import the engine from `react-step-flow/core`.
+Yes — import the engine from `@jose-eduardo-martins/react-step-flow/core`.
 
 **Why don't my `tutorialId` props on third-party components register?**
 A plain prop on someone else's component is just forwarded to the DOM; the
