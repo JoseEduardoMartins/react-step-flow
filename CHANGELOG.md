@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/JoseEduardoMartins/react-step-flow/compare/v1.1.0...v1.2.0) (2026-09-16)
+
+
+### Features
+
+* track animated anchors for tooltip and spotlight ([0a247d0](https://github.com/JoseEduardoMartins/react-step-flow/commit/0a247d0677ab77ce6d94ad2e4b02bfcc034c9e49))
+
 # [1.1.0](https://github.com/JoseEduardoMartins/react-step-flow/compare/v1.0.0...v1.1.0) (2026-09-16)
 
 
