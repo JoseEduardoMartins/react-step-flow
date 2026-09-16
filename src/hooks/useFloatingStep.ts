@@ -45,7 +45,7 @@ export function useFloatingStep(params: UseFloatingStepParams) {
     strategy: "fixed",
     middleware: [
       offset(offsetPx),
-      flip({ fallbackAxisSideDirection: "start" }),
+      flip({ crossAxis: false, fallbackAxisSideDirection: "start" }),
       shift({ padding: 8, limiter: limitShift() }),
       arrow({ element: arrowRef }),
     ],
