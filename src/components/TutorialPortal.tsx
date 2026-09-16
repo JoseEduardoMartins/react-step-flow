@@ -36,19 +36,27 @@ export function TutorialPortal() {
 
   const targetId =
     step && step.target && step.placement !== "center" ? step.target : null;
+  // The spotlight may cut out a different (usually larger) element than the one
+  // the tooltip anchors to — see {@link Step.spotlightTarget}. Falls back to the
+  // tooltip target.
+  const spotlightId =
+    step && step.placement !== "center" ? (step.spotlightTarget ?? targetId) : null;
 
   // Resolve the target synchronously during render so a step change never reads
   // as "missing" for a frame. A registry subscription only forces a re-render
   // when a lazily-mounted target for the current id appears/disappears.
   const [, forceRerender] = useReducer((n: number) => n + 1, 0);
   useEffect(() => {
-    if (!isRunning || !targetId) return;
+    if (!isRunning) return;
+    const ids = [targetId, spotlightId].filter((id): id is string => id != null);
+    if (ids.length === 0) return;
     return store.registry.subscribe((id) => {
-      if (id === targetId) forceRerender();
+      if (ids.includes(id)) forceRerender();
     });
-  }, [store, isRunning, targetId]);
+  }, [store, isRunning, targetId, spotlightId]);
 
   const targetEl = isRunning && targetId ? store.registry.get(targetId) : null;
+  const spotlightEl = isRunning && spotlightId ? store.registry.get(spotlightId) : null;
   const missing = isRunning && targetId != null && targetEl === null;
 
   // Report + react to a missing target.
@@ -63,11 +71,15 @@ export function TutorialPortal() {
   const waiting =
     missing && (config.targetNotFound === "wait" || config.targetNotFound === "skip");
 
-  const rect = useElementRect(centered ? null : targetEl);
+  // Spotlight + scroll follow the spotlight element (which may be larger than the
+  // tooltip's anchor); the tooltip anchors to `targetEl` via `useFloatingStep`.
+  const spotlightRectEl = spotlightEl ?? targetEl;
+  const rect = useElementRect(centered ? null : spotlightRectEl);
   const placement: Placement = centered ? "center" : (step?.placement ?? "bottom");
 
-  // Scroll the target into view when it changes (skipped for centered steps).
-  useScrollIntoView(centered ? null : targetEl, {
+  // Scroll the spotlighted element into view when it changes (skipped for
+  // centered steps).
+  useScrollIntoView(centered ? null : spotlightRectEl, {
     behavior: config.scrollBehavior,
     enabled: !centered,
   });

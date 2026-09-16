@@ -25,6 +25,13 @@ export interface Step<M = unknown> {
   target: string;
   title: string;
   description: string;
+  /**
+   * Optional id of a DIFFERENT registered element for the spotlight cut-out.
+   * Use it when the tooltip should anchor to a compact element (`target`) while
+   * the highlight covers a larger region — e.g. a whole list or form section.
+   * Defaults to `target`. Also drives which element is scrolled into view.
+   */
+  spotlightTarget?: string;
   /** Preferred placement of the tooltip. Defaults to `"bottom"`. */
   placement?: Placement;
   /** Label for the "next" action button. */

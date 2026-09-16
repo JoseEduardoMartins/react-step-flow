@@ -104,9 +104,7 @@ describe("TutorialPortal", () => {
     const store = createStore();
     store.register({
       id: "c",
-      steps: [
-        { target: "", title: "Welcome", description: "hi", placement: "center" },
-      ],
+      steps: [{ target: "", title: "Welcome", description: "hi", placement: "center" }],
     });
     const { baseElement } = renderApp(store);
     act(() => store.start("c"));
@@ -157,6 +155,66 @@ describe("TutorialPortal", () => {
     expect(onNotFound).toHaveBeenCalled();
     expect(baseElement.querySelector("[data-rsf-overlay]")).not.toBeNull();
     expect(screen.getByRole("dialog")).toHaveTextContent("Ghost");
+  });
+
+  it("centers a target-less step via a CSS transform (not a virtual reference)", () => {
+    const store = createStore();
+    store.register({
+      id: "c",
+      steps: [{ target: "", title: "W", description: "d", placement: "center" }],
+    });
+    renderApp(store);
+    act(() => store.start("c"));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.style.position).toBe("fixed");
+    expect(dialog.style.transform).toBe("translate(-50%, -50%)");
+  });
+
+  it("anchors a targeted step to its target, not the viewport center", () => {
+    const store = createStore();
+    store.register(flow);
+    renderApp(store);
+    act(() => store.start("f"));
+    // The anchored tooltip must NOT use the centered CSS transform — regression
+    // guard for the virtual→element reference bug that pinned it to center.
+    expect(screen.getByRole("dialog").style.transform).not.toBe("translate(-50%, -50%)");
+  });
+
+  it("cuts out the spotlightTarget element while the tooltip anchors to target", () => {
+    const store = createStore();
+    store.register({
+      id: "st",
+      steps: [{ target: "a", spotlightTarget: "b", title: "T", description: "d" }],
+    });
+    const { baseElement } = renderApp(store);
+
+    // Give element B (the spotlightTarget) a distinctive rect so we can tell the
+    // hole was cut from B, not from the tooltip's target A (rect 0 in jsdom).
+    const bBtn = screen.getByRole("button", { name: "B" });
+    bBtn.getBoundingClientRect = () =>
+      ({
+        x: 100,
+        y: 200,
+        width: 60,
+        height: 20,
+        top: 200,
+        left: 100,
+        right: 160,
+        bottom: 220,
+        toJSON() {},
+      }) as DOMRect;
+
+    act(() => store.start("st"));
+
+    const spot = baseElement.querySelector("[data-rsf-spotlight]");
+    expect(spot).not.toBeNull();
+    const hole = spot!.querySelector('rect[fill="black"]') as SVGRectElement;
+    // Hole = B's rect expanded by the default spotlightPadding (8): ~ (92, 192).
+    expect(Number(hole.getAttribute("x"))).toBeGreaterThan(80);
+    expect(Number(hole.getAttribute("x"))).toBeLessThan(100);
+    expect(Number(hole.getAttribute("y"))).toBeGreaterThan(180);
+    // Tooltip still renders (anchored to A).
+    expect(screen.getByRole("dialog")).toHaveTextContent("T");
   });
 
   it("waits (renders nothing) for a missing target when targetNotFound is 'wait'", () => {
