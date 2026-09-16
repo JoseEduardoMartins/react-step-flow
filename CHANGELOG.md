@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/JoseEduardoMartins/react-step-flow/compare/v1.2.0...v1.2.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* keep side-placed tooltips on their axis instead of flipping onto the target ([85c4152](https://github.com/JoseEduardoMartins/react-step-flow/commit/85c41529d7cd79b9811082c983285e8c537b8948))
+
 # [1.2.0](https://github.com/JoseEduardoMartins/react-step-flow/compare/v1.1.0...v1.2.0) (2026-09-16)
 
 
