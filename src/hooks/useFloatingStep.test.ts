@@ -5,10 +5,11 @@ import { useFloatingStep } from "./useFloatingStep";
 // Capture the config handed to Floating UI's `useFloating` so we can assert how
 // `whileElementsMounted` is wired. `vi.hoisted` keeps the shared state available
 // inside the hoisted `vi.mock` factory.
-const { autoUpdateSpy, getConfig, setConfig } = vi.hoisted(() => {
+const { autoUpdateSpy, flipSpy, getConfig, setConfig } = vi.hoisted(() => {
   let config: { whileElementsMounted?: unknown; placement?: string } | null = null;
   return {
     autoUpdateSpy: vi.fn(() => () => {}),
+    flipSpy: vi.fn(() => ({})),
     getConfig: () => config,
     setConfig: (c: typeof config) => {
       config = c;
@@ -29,7 +30,7 @@ vi.mock("@floating-ui/react", () => ({
   },
   autoUpdate: autoUpdateSpy,
   offset: () => ({}),
-  flip: () => ({}),
+  flip: flipSpy,
   shift: () => ({}),
   limitShift: () => ({}),
   arrow: () => ({}),
@@ -57,5 +58,16 @@ describe("useFloatingStep", () => {
     expect(autoUpdateSpy).toHaveBeenCalledWith(reference, floatingEl, update, {
       animationFrame: true,
     });
+  });
+
+  it("disables flip crossAxis so a side placement is not flipped to the perpendicular axis", () => {
+    const el = document.createElement("div");
+    renderHook(() => useFloatingStep({ target: el, placement: "left" }));
+
+    // A tooltip anchored to a target at the top edge (e.g. a drawer header) with
+    // placement "left" overflows the top on the cross axis. With crossAxis flip
+    // enabled it falls back to "bottom" and lands over the panel; disabling it
+    // keeps the tooltip on the requested side and lets `shift` handle the fit.
+    expect(flipSpy).toHaveBeenCalledWith(expect.objectContaining({ crossAxis: false }));
   });
 });
