@@ -49,7 +49,15 @@ export function useFloatingStep(params: UseFloatingStepParams) {
       shift({ padding: 8, limiter: limitShift() }),
       arrow({ element: arrowRef }),
     ],
-    whileElementsMounted: autoUpdate,
+    // `animationFrame: true` re-measures the reference every frame while both
+    // elements are mounted, comparing bounding boxes. Without it, `autoUpdate`
+    // only reacts to scroll/resize/layout — a CSS `transform` animation (e.g. a
+    // drawer sliding in) does NOT trigger those, so the tooltip would anchor to
+    // the target's initial off-screen position and never follow it in. With it,
+    // the tooltip glides in together with an animating anchor. The rAF loop runs
+    // only while a step is active.
+    whileElementsMounted: (reference, floatingEl, update) =>
+      autoUpdate(reference, floatingEl, update, { animationFrame: true }),
   });
 
   // Feed Floating UI ONLY a real element (or null) as the reference — never a
