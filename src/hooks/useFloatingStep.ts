@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import {
   arrow,
   autoUpdate,
   flip,
+  limitShift,
   offset,
   shift,
   useFloating,
-  type VirtualElement,
 } from "@floating-ui/react";
 import type { Placement } from "../types";
 
@@ -21,23 +21,19 @@ export interface UseFloatingStepParams {
   offset?: number;
 }
 
-/** A virtual reference anchored at the center of the viewport. */
-function centerVirtualElement(): VirtualElement {
-  return {
-    getBoundingClientRect() {
-      const w = typeof window !== "undefined" ? window.innerWidth : 0;
-      const h = typeof window !== "undefined" ? window.innerHeight : 0;
-      const x = w / 2;
-      const y = h / 2;
-      return { x, y, width: 0, height: 0, top: y, left: x, right: x, bottom: y };
-    },
-  };
-}
+/** Fixed, viewport-centered styles for target-less (centered) steps. */
+const centeredStyles: CSSProperties = {
+  position: "fixed",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+};
 
 /**
  * Wraps Floating UI's `useFloating` for a single tutorial step. Anchors the
- * tooltip to the target element (or a viewport-centered virtual element for
- * centered steps) and keeps it positioned on scroll/resize via `autoUpdate`.
+ * tooltip to the target element and keeps it positioned on scroll/resize via
+ * `autoUpdate`; centered (target-less) steps are pinned to the viewport center
+ * with plain CSS.
  */
 export function useFloatingStep(params: UseFloatingStepParams) {
   const { target, placement, offset: offsetPx = 12 } = params;
@@ -50,16 +46,25 @@ export function useFloatingStep(params: UseFloatingStepParams) {
     middleware: [
       offset(offsetPx),
       flip({ fallbackAxisSideDirection: "start" }),
-      shift({ padding: 8 }),
+      shift({ padding: 8, limiter: limitShift() }),
       arrow({ element: arrowRef }),
     ],
     whileElementsMounted: autoUpdate,
   });
 
-  const { refs } = floating;
-  useEffect(() => {
-    refs.setReference(isCenter ? centerVirtualElement() : target);
-  }, [refs, target, isCenter]);
+  // Feed Floating UI ONLY a real element (or null) as the reference — never a
+  // virtual element. A virtual→element reference change does NOT re-bind
+  // `autoUpdate`/recompute in Floating UI, so once a lazily-mounted target
+  // resolved the tooltip stayed frozen where it was first computed (viewport
+  // center). A null→element change binds correctly; centered steps are pinned
+  // by CSS via `centeredStyles` instead of a virtual reference.
+  useLayoutEffect(() => {
+    floating.refs.setReference(target);
+  }, [floating.refs, target]);
+
+  const floatingStyles: CSSProperties = isCenter
+    ? centeredStyles
+    : floating.floatingStyles;
 
   const arrowStyles = useMemo<CSSProperties>(() => {
     const data = floating.middlewareData.arrow;
@@ -71,11 +76,11 @@ export function useFloatingStep(params: UseFloatingStepParams) {
   }, [floating.middlewareData.arrow]);
 
   return {
-    setFloating: refs.setFloating,
+    setFloating: floating.refs.setFloating,
     setArrow: (node: HTMLElement | null) => {
       arrowRef.current = node;
     },
-    floatingStyles: floating.floatingStyles,
+    floatingStyles,
     placement: floating.placement,
     arrowStyles,
     isCenter,
