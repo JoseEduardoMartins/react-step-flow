@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/JoseEduardoMartins/react-step-flow/compare/v1.0.0...v1.1.0) (2026-09-16)
+
+
+### Bug Fixes
+
+* anchor the tooltip to its target instead of the viewport center ([a8b3521](https://github.com/JoseEduardoMartins/react-step-flow/commit/a8b35218da8c354361502f703b3739f7e05d68fe))
+
+
+### Features
+
+* add per-step spotlightTarget to decouple the highlight from the anchor ([b302c7d](https://github.com/JoseEduardoMartins/react-step-flow/commit/b302c7dd8c8669a58626d088122b4cd258497ab4))
+
 # 1.0.0 (2026-07-24)
 
 
