@@ -86,10 +86,26 @@ export function useFocusTrap(
     extraContainer,
   }: UseFocusTrapOptions
 ): void {
-  // Set up the key handler and focus restoration for the lifetime of the trap.
+  // Restore focus to the element that had it before the trap, on teardown only.
+  // Keyed on `active` alone so it captures once and restores exactly when the
+  // trap deactivates or unmounts — never on the key-handler effect's incidental
+  // re-runs (a caller re-render, e.g. from tracking the focused element, would
+  // otherwise yank focus back to the trigger mid-step).
   useEffect(() => {
     if (!active) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    return () => {
+      if (restoreFocus && previouslyFocused?.focus) {
+        previouslyFocused.focus();
+      }
+    };
+  }, [active, restoreFocus]);
+
+  // Contain Tab/Shift+Tab and route Escape. Rebinds freely as its deps change
+  // (e.g. a new `onEscape` each render, or `extraContainer` mounting late); the
+  // cleanup only detaches the listener, so re-runs never move focus.
+  useEffect(() => {
+    if (!active) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -135,13 +151,8 @@ export function useFocusTrap(
     };
 
     document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown, true);
-      if (restoreFocus && previouslyFocused?.focus) {
-        previouslyFocused.focus();
-      }
-    };
-  }, [active, onEscape, restoreFocus, containerRef, containFocus, extraContainer]);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [active, onEscape, containerRef, containFocus, extraContainer]);
 
   // Move focus into the container on activation and whenever focusKey changes.
   useEffect(() => {
