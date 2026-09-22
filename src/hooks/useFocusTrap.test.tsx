@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "./useFocusTrap";
@@ -190,5 +190,32 @@ describe("useFocusTrap with an extra (interactive) container", () => {
   it("still moves initial focus to the tooltip, not the highlighted element", () => {
     render(<TrapWithExtra />);
     expect(document.activeElement?.textContent).toBe("tip-1");
+  });
+});
+
+/**
+ * A trap whose `onEscape` is a fresh function each render, so the key-handler
+ * effect re-runs on every re-render — mirroring real usage where the tooltip's
+ * cancel handler is inline. Focus must not be pulled back by those re-runs.
+ */
+function ReRenderTrap() {
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, { active: true, onEscape: () => {}, focusKey: 0 });
+  return (
+    <div ref={ref}>
+      <button>first</button>
+      <button>second</button>
+    </div>
+  );
+}
+
+describe("useFocusTrap does not restore focus on incidental re-renders", () => {
+  it("keeps focus put when the trap re-renders mid-step", () => {
+    const { rerender } = render(<ReRenderTrap />);
+    focusByText("second");
+    // A re-render recreates `onEscape`, re-running the key-handler effect. The
+    // teardown-only restore must not fire here.
+    act(() => rerender(<ReRenderTrap />));
+    expect(document.activeElement?.textContent).toBe("second");
   });
 });
