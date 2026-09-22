@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/JoseEduardoMartins/react-step-flow/compare/v1.2.1...v1.3.0) (2026-09-22)
+
+
+### Features
+
+* contain focus across tooltip and highlighted element on interactive steps ([a3ac201](https://github.com/JoseEduardoMartins/react-step-flow/commit/a3ac20167bafe3543892147b63bcc73f3de33cfb))
+
 ## [1.2.1](https://github.com/JoseEduardoMartins/react-step-flow/compare/v1.2.0...v1.2.1) (2026-09-16)
 
 
