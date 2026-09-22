@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/JoseEduardoMartins/react-step-flow/compare/v1.3.0...v1.4.0) (2026-09-22)
+
+
+### Bug Fixes
+
+* restore focus only when the trap tears down, not on every re-render ([116eb52](https://github.com/JoseEduardoMartins/react-step-flow/commit/116eb5291c4530f80243e92806e2e932ae0834c9))
+
+
+### Features
+
+* spotlight follows the focused control on interactive steps ([47e1047](https://github.com/JoseEduardoMartins/react-step-flow/commit/47e1047cab720c3c87b001366d39019f615304f3))
+
 # [1.3.0](https://github.com/JoseEduardoMartins/react-step-flow/compare/v1.2.1...v1.3.0) (2026-09-22)
 
 
