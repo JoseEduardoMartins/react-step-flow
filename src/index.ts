@@ -32,6 +32,7 @@ export { useScrollIntoView } from "./hooks/useScrollIntoView";
 export type { UseScrollIntoViewOptions } from "./hooks/useScrollIntoView";
 export { useFocusTrap } from "./hooks/useFocusTrap";
 export type { UseFocusTrapOptions } from "./hooks/useFocusTrap";
+export { useFocusedWithin } from "./hooks/useFocusedWithin";
 export { useInertBackground } from "./hooks/useInertBackground";
 export { useAttributeScan } from "./hooks/useAttributeScan";
 export type { ScanRoot } from "./hooks/useAttributeScan";

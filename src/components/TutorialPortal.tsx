@@ -7,6 +7,7 @@ import { useElementRect } from "../hooks/useElementRect";
 import { useFloatingStep } from "../hooks/useFloatingStep";
 import { useScrollIntoView } from "../hooks/useScrollIntoView";
 import { useFocusTrap } from "../hooks/useFocusTrap";
+import { useFocusedWithin } from "../hooks/useFocusedWithin";
 import { useInertBackground } from "../hooks/useInertBackground";
 import { expandRect } from "../utils/rect";
 import { isBrowser } from "../utils/ssr";
@@ -71,9 +72,23 @@ export function TutorialPortal() {
   const waiting =
     missing && (config.targetNotFound === "wait" || config.targetNotFound === "skip");
 
-  // Spotlight + scroll follow the spotlight element (which may be larger than the
-  // tooltip's anchor); the tooltip anchors to `targetEl` via `useFloatingStep`.
-  const spotlightRectEl = spotlightEl ?? targetEl;
+  const interactable = step?.interactable ?? false;
+  const trapActive = isRunning && !!step && !waiting;
+
+  // The highlighted element (which may be larger than the tooltip's anchor); the
+  // tooltip anchors to `targetEl` via `useFloatingStep`.
+  const spotlightTargetEl = spotlightEl ?? targetEl;
+
+  // Interactive steps: as Tab walks the highlighted element's controls, the
+  // spotlight follows the focused control, and falls back to the whole element
+  // when focus rests on the tooltip. Non-interactive steps never move focus into
+  // the element, so this stays null and the spotlight tracks the whole element.
+  const focusedInTarget = useFocusedWithin(
+    interactable ? spotlightTargetEl : null,
+    trapActive
+  );
+  const spotlightRectEl = focusedInTarget ?? spotlightTargetEl;
+
   const rect = useElementRect(centered ? null : spotlightRectEl);
   const placement: Placement = centered ? "center" : (step?.placement ?? "bottom");
 
@@ -91,22 +106,20 @@ export function TutorialPortal() {
   });
 
   const container = config.portalContainer ?? (isBrowser ? document.body : null);
-  const interactable = step?.interactable ?? false;
 
   // Focus management: trap focus in the tooltip, route Escape to cancel.
   const tooltipContainerRef = useRef<HTMLDivElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const escapable = config.closeOnEsc && (step?.canSkip ?? true);
-  const trapActive = isRunning && !!step && !waiting;
   useFocusTrap(tooltipContainerRef, {
     active: trapActive,
     onEscape: escapable ? () => store.cancel() : undefined,
     focusKey: stepIndex,
     // Interactive steps keep focus contained, but extend the trap to include the
-    // highlighted element (e.g. a non-modal drawer in its own portal) so Tab
-    // reaches it without escaping to the page behind. Non-interactive steps stay
-    // tooltip-only. Initial focus lands on the tooltip either way.
-    extraContainer: interactable ? spotlightRectEl : null,
+    // whole highlighted element (e.g. a non-modal drawer in its own portal) so
+    // Tab reaches it without escaping to the page behind. Non-interactive steps
+    // stay tooltip-only. Initial focus lands on the tooltip either way.
+    extraContainer: interactable ? spotlightTargetEl : null,
   });
 
   // Strict modal semantics: take the rest of the page out of reach while a
