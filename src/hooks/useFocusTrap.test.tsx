@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "./useFocusTrap";
 
 function Trap({
@@ -116,5 +116,79 @@ describe("useFocusTrap", () => {
     second.focus();
     await user.tab();
     expect(document.activeElement?.textContent).toBe("first");
+  });
+});
+
+/**
+ * Interactive step: the tooltip and the highlighted element (e.g. a non-modal
+ * drawer) sit in separate DOM subtrees, with unrelated page content before and
+ * after both. `extraContainer` joins the highlighted element into the trap so
+ * Tab cycles across tooltip + panel in document order and never reaches the
+ * page behind.
+ */
+function TrapWithExtra() {
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const extraRef = useRef<HTMLDivElement>(null);
+  const [extra, setExtra] = useState<HTMLElement | null>(null);
+  useEffect(() => setExtra(extraRef.current), []);
+  useFocusTrap(tooltipRef, { active: true, extraContainer: extra });
+  return (
+    <div>
+      <button>before</button>
+      <div ref={tooltipRef}>
+        <button>tip-1</button>
+        <button>tip-2</button>
+      </div>
+      <div ref={extraRef}>
+        <button>panel-1</button>
+        <button>panel-2</button>
+      </div>
+      <button>after</button>
+    </div>
+  );
+}
+
+const focusByText = (text: string) =>
+  [...document.querySelectorAll("button")].find((b) => b.textContent === text)!.focus();
+
+describe("useFocusTrap with an extra (interactive) container", () => {
+  it("extends the trap from the tooltip into the highlighted element", async () => {
+    const user = userEvent.setup();
+    render(<TrapWithExtra />);
+    focusByText("tip-2"); // last tooltip focusable
+    await user.tab();
+    expect(document.activeElement?.textContent).toBe("panel-1");
+  });
+
+  it("wraps from the last panel focusable back to the first tooltip focusable", async () => {
+    const user = userEvent.setup();
+    render(<TrapWithExtra />);
+    focusByText("panel-2"); // last focusable of the whole trapped set
+    await user.tab();
+    expect(document.activeElement?.textContent).toBe("tip-1");
+  });
+
+  it("wraps backward from the first tooltip focusable to the last panel focusable", async () => {
+    const user = userEvent.setup();
+    render(<TrapWithExtra />);
+    focusByText("tip-1");
+    await user.tab({ shift: true });
+    expect(document.activeElement?.textContent).toBe("panel-2");
+  });
+
+  it("never lets focus reach page content outside the trapped set", async () => {
+    const user = userEvent.setup();
+    render(<TrapWithExtra />);
+    focusByText("panel-2");
+    await user.tab(); // forward past the end
+    expect(document.activeElement?.textContent).not.toBe("after");
+    focusByText("tip-1");
+    await user.tab({ shift: true }); // backward past the start
+    expect(document.activeElement?.textContent).not.toBe("before");
+  });
+
+  it("still moves initial focus to the tooltip, not the highlighted element", () => {
+    render(<TrapWithExtra />);
+    expect(document.activeElement?.textContent).toBe("tip-1");
   });
 });

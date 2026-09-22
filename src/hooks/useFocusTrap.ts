@@ -26,6 +26,14 @@ export interface UseFocusTrapOptions {
    * outside the tooltip; Escape and initial focus still apply.
    */
   containFocus?: boolean;
+  /**
+   * A second element whose focusables join the trap (e.g. the highlighted
+   * element of an interactive step, such as a non-modal drawer that lives in its
+   * own portal). Focus then cycles across the tooltip and this element in
+   * document order and still never escapes to the page behind. Initial focus
+   * stays on the tooltip. Ignored when `containFocus` is false.
+   */
+  extraContainer?: HTMLElement | null;
 }
 
 function focusableWithin(container: HTMLElement | null): HTMLElement[] {
@@ -33,6 +41,33 @@ function focusableWithin(container: HTMLElement | null): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
     (el) => !el.hidden && el.getAttribute("aria-hidden") !== "true"
   );
+}
+
+/**
+ * Focusables of the tooltip container plus an optional extra container, in
+ * document order and de-duplicated. Document order (not container order) keeps
+ * Tab reading naturally regardless of which portal mounted first.
+ */
+function collectFocusables(
+  container: HTMLElement | null,
+  extra: HTMLElement | null | undefined
+): HTMLElement[] {
+  const items = focusableWithin(container);
+  if (!extra) return items;
+  const seen = new Set<HTMLElement>(items);
+  for (const el of focusableWithin(extra)) {
+    if (!seen.has(el)) {
+      seen.add(el);
+      items.push(el);
+    }
+  }
+  items.sort((a, b) => {
+    const pos = a.compareDocumentPosition(b);
+    if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+    if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+    return 0;
+  });
+  return items;
 }
 
 /**
@@ -48,6 +83,7 @@ export function useFocusTrap(
     restoreFocus = true,
     focusKey,
     containFocus = true,
+    extraContainer,
   }: UseFocusTrapOptions
 ): void {
   // Set up the key handler and focus restoration for the lifetime of the trap.
@@ -61,14 +97,34 @@ export function useFocusTrap(
         return;
       }
       if (!containFocus || event.key !== "Tab") return;
-      const items = focusableWithin(containerRef.current);
+      const extra = containFocus ? extraContainer : null;
+      const items = collectFocusables(containerRef.current, extra);
       if (items.length === 0) {
         event.preventDefault();
         return;
       }
       const first = items[0]!;
       const last = items[items.length - 1]!;
-      const activeEl = document.activeElement;
+      const activeEl = document.activeElement as HTMLElement | null;
+
+      // With an extra container the focusables span two disconnected subtrees,
+      // so the browser's natural Tab between them would land on the page
+      // behind. Fully drive every Tab through the ordered list instead of only
+      // wrapping at the boundaries.
+      if (extra) {
+        const idx = activeEl ? items.indexOf(activeEl) : -1;
+        event.preventDefault();
+        if (idx === -1) {
+          (event.shiftKey ? last : first).focus();
+          return;
+        }
+        const nextIdx = event.shiftKey
+          ? (idx - 1 + items.length) % items.length
+          : (idx + 1) % items.length;
+        items[nextIdx]!.focus();
+        return;
+      }
+
       if (event.shiftKey && activeEl === first) {
         event.preventDefault();
         last.focus();
@@ -85,7 +141,7 @@ export function useFocusTrap(
         previouslyFocused.focus();
       }
     };
-  }, [active, onEscape, restoreFocus, containerRef, containFocus]);
+  }, [active, onEscape, restoreFocus, containerRef, containFocus, extraContainer]);
 
   // Move focus into the container on activation and whenever focusKey changes.
   useEffect(() => {
