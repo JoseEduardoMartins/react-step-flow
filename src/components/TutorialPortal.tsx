@@ -102,8 +102,11 @@ export function TutorialPortal() {
     active: trapActive,
     onEscape: escapable ? () => store.cancel() : undefined,
     focusKey: stepIndex,
-    // Interactive steps must let focus reach the highlighted element.
-    containFocus: !interactable,
+    // Interactive steps keep focus contained, but extend the trap to include the
+    // highlighted element (e.g. a non-modal drawer in its own portal) so Tab
+    // reaches it without escaping to the page behind. Non-interactive steps stay
+    // tooltip-only. Initial focus lands on the tooltip either way.
+    extraContainer: interactable ? spotlightRectEl : null,
   });
 
   // Strict modal semantics: take the rest of the page out of reach while a
